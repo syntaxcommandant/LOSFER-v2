@@ -117,14 +117,23 @@ def verify_item(
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    stored_answer = item.secret_answer.strip().lower()
+    stored_answer = item.secret_answer.strip().lower() if item.secret_answer else ""
     given_answer = submitted_answer.strip().lower()
+    print("ITEM ID:", item_id)
+    print("STORED ANSWER:", repr(item.secret_answer))
+    print("SUBMITTED ANSWER:", repr(submitted_answer))
 
     # Common filler words jo ignore karne hain
     ignore_words = {"the", "a", "an", "is", "are", "there", "it", "has", "on", "of", "in"}
 
     stored_words = set(stored_answer.split()) - ignore_words
     given_words = set(given_answer.split()) - ignore_words
+
+    print("STORED WORDS:", stored_words)
+    print("GIVEN WORDS:", given_words)
+    print("MATCH COUNT:", match_count)
+    print("MATCH RATIO:", match_ratio)
+
 
     if not stored_words:
         return {"verified": False, "message": "No valid secret answer stored"}
@@ -150,12 +159,19 @@ def get_found_items(
     db: Session = Depends(get_db)
 ):
     """
-    Retrieves and lists all found items, with optional category filtering[cite: 1].
+    Retrieves and lists all found items, with optional category filtering
     """
     query = db.query(models.Item).filter(models.Item.item_type == models.ItemTypeEnum.FOUND)
     if category:
         query = query.filter(models.Item.category.ilike(f"%{category}%"))
-    return query.all()
+    items = query.all()
+
+    for item in items:
+        claim = db.query(models.Claim).filter(models.Claim.item_id == item.id).first()
+        item.claim_id = claim.id if claim else None
+
+    return items
+
 
 # --- AI MATCHING ENDPOINT ---[cite: 1]
 
@@ -247,3 +263,71 @@ def submit_claim(
     db.commit()
     db.refresh(claim)
     return claim
+
+@app.post("/claims/{claim_id}/messages")
+def send_message(
+    claim_id: int,
+    message: str = Form(...),
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    new_message = models.Message(
+        claim_id=claim_id,
+        sender_id=user_id,
+        message=message
+    )
+
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+
+    return new_message
+
+@app.get("/claims/{claim_id}/messages")
+def get_messages(
+    claim_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    messages = (
+        db.query(models.Message)
+        .filter(models.Message.claim_id == claim_id)
+        .order_by(models.Message.created_at)
+        .all()
+    )
+
+    return [
+        {
+            "id": msg.id,
+            "sender": "You" if msg.sender_id == user_id else "Other User",
+            "text": msg.message,
+            "created_at": msg.created_at
+        }
+        for msg in messages
+    ]
+
+@app.get("/claims/{claim_id}/unread-count")
+def get_unread_count(
+    claim_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    unread = db.query(models.Message).filter(
+        models.Message.claim_id == claim_id,
+        models.Message.sender_id != user_id,
+        models.Message.is_read == False
+    ).count()
+    return {"unread_count": unread}
+
+@app.post("/claims/{claim_id}/mark-read")
+def mark_messages_read(
+    claim_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    db.query(models.Message).filter(
+        models.Message.claim_id == claim_id,
+        models.Message.sender_id != user_id
+    ).update({"is_read": True})
+    db.commit()
+    return {"status": "marked as read"}

@@ -69,3 +69,18 @@ class Match(Base):
 
     lost_item = relationship("Item", foreign_keys=[lost_item_id])
     found_item = relationship("Item", foreign_keys=[found_item_id])
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    claim_id = Column(Integer, ForeignKey("claims.id"), nullable=False)
+
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    message = Column(Text, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_read = Column(Boolean, default=False)
+    

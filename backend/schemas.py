@@ -7,7 +7,7 @@ from models import ItemTypeEnum, ClaimStatusEnum
 class ItemCreate(BaseModel):
     title: str
     description: str
-    secret_answer: str
+    secret_answer: Optional[str] = None
     category: str
     color: str
     location: str
@@ -25,6 +25,8 @@ class ItemResponse(BaseModel):
     location: str
     timestamp: datetime
     image_url: Optional[str]
+    claim_id: Optional[int] = None
+    
 
     class Config:
         from_attributes = True
