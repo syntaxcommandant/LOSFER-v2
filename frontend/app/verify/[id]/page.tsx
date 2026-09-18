@@ -168,6 +168,33 @@ export default function VerifyItemPage() {
                 Your answer satisfied the &ge;60% keyword match requirement. Claim #{claimId || 1} has been approved and logged.
               </p>
             </div>
+            {/* Secure Chat */}
+            
+
+<div className="rounded-2xl border border-cyan-500/30 bg-slate-950/60 p-5 space-y-4">
+  <div>
+    <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm">
+      <span className="text-lg">💬</span>
+      <span>SECURE CHAT</span>
+    </div>
+
+    <h3 className="text-lg font-bold text-white mt-2">
+      Chat with Finder
+    </h3>
+
+    <p className="text-xs text-slate-400 mt-1">
+      Coordinate the item handoff securely before meeting.
+    </p>
+  </div>
+
+  <Link
+    href={`/chat/${claimId || 1}`}
+    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-400 transition"
+  >
+    <span>💬</span>
+    <span>Open Secure Chat</span>
+  </Link>
+</div>
 
             {/* QR Handoff Prompt */}
             <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-950/40 to-slate-950/90 p-6 space-y-4 max-w-md mx-auto">

@@ -12,6 +12,7 @@ export interface Item {
   timestamp: string;
   image_url?: string | null;
   secret_answer?: string;
+  claim_id?: number | null;
 }
 
 export interface MatchCandidate {

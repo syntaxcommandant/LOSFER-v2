@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Item, MatchCandidate, Claim, VerifyResult } from './types';
 
+
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 // Fallback demo items for offline resilience / initial campus showcase
@@ -196,3 +197,34 @@ export async function submitClaim(itemId: number, verificationAnswer: string): P
   });
   return res.data;
 }
+
+export async function sendMessage(
+  claimId: number,
+  message: string
+) {
+  const formData = new FormData();
+
+  formData.append("message", message);
+
+  const res = await axios.post(
+    `${API_BASE_URL}/claims/${claimId}/messages`,
+    formData
+  );
+
+  return res.data;
+}
+
+export async function getMessages(claimId: number) {
+  const res = await axios.get(
+    `${API_BASE_URL}/claims/${claimId}/messages`
+  );
+
+  return res.data;
+}
+
+export async function markMessagesRead(claimId: number) {
+  const res = await axios.post(`${API_BASE_URL}/claims/${claimId}/mark-read`);
+  return res.data;
+}
+
+

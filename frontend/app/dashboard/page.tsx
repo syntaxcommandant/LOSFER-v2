@@ -177,6 +177,15 @@ export default function DashboardPage() {
                       <MapPinIcon className="w-3 h-3 text-cyan-400 flex-shrink-0" />
                       <span className="truncate">{item.location}</span>
                     </div>
+                    {item.claim_id && (
+  <Link
+    href={`/chat/${item.claim_id}`}
+    className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-1.5 text-xs font-semibold text-cyan-300"
+  >
+    Open Chat
+  </Link>
+)}
+
                   </div>
 
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
