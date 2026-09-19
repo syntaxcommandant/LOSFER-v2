@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import {
   UserIcon,
@@ -11,6 +12,7 @@ import {
   ArrowRightIcon,
   CheckCircleIcon,
 } from '../../components/icons';
+
 
 export default function AuthPage() {
   const router = useRouter();
@@ -22,27 +24,46 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
+  try {
+    const endpoint = isSignUp
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/signup`
+      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/login`;
+
+    const payload = isSignUp
+      ? { email: email.trim(), password: password.trim() }
+      : { email: email.trim(), password: password.trim() };
+
+    const res = await axios.post(endpoint, payload);
+
+    const userProfile = {
+      id: res.data.user_id || res.data.id,
+      email: email.trim(),
+      name: name.trim() || 'Campus Student',
+      studentId: studentId.trim() || 'N/A',
+      role: 'student',
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('losfer_user', JSON.stringify(userProfile));
+    }
+
+    setLoading(false);
+    setSuccessNotice(`Authenticated as ${userProfile.email}! Redirecting...`);
     setTimeout(() => {
-      const userProfile = {
-        email: email.trim() || 'student@university.edu',
-        name: name.trim() || 'Campus Student',
-        studentId: studentId.trim() || 'CS-2024-8812',
-        role: 'student',
-      };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('losfer_user', JSON.stringify(userProfile));
-      }
-      setLoading(false);
-      setSuccessNotice(`Authenticated as ${userProfile.email}! Redirecting...`);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1000);
-    }, 600);
-  };
+      router.push('/dashboard');
+    }, 1000);
+  } catch (err) {
+    setLoading(false);
+    if (axios.isAxiosError(err)) {
+      setSuccessNotice(null);
+      alert(err.response?.data?.detail || 'Authentication failed');
+    }
+  }
+};
 
   const handleQuickDemo = (role: 'student' | 'admin') => {
     const demoUser =

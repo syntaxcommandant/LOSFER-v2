@@ -1,4 +1,5 @@
 from fastapi import UploadFile, File, Form, FastAPI, Depends, HTTPException, status, Query
+from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
@@ -18,6 +19,7 @@ import models, schemas, services
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="LoseFer Backend Engine - Member B", version="1.0.0")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,6 +35,30 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # Dummy User Dependency for multi-user context testing (Replaced by JWT middleware in Auth integration)
 def get_current_user_id() -> int:
     return 1
+
+# --- AUTH ENDPOINTS ---
+
+@app.post("/signup", response_model=schemas.UserResponse)
+def signup(user_in: schemas.UserSignup, db: Session = Depends(get_db)):
+    existing_user = db.query(models.User).filter(models.User.email == user_in.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    hashed_pw = pwd_context.hash(user_in.password)
+    new_user = models.User(email=user_in.email, hashed_password=hashed_pw)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+@app.post("/login")
+def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == user_in.email).first()
+    if not user or not pwd_context.verify(user_in.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    return {"message": "Login successful", "user_id": user.id, "email": user.email}
 
 # --- REPORTING ENDPOINTS ---[cite: 1]
 
